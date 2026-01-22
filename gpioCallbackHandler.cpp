@@ -109,4 +109,3 @@ void hostReset([[maybe_unused]] std::string GpioName,
             "Failed to set RequestedHostTransition");
     }
 }
-

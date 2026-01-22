@@ -7,15 +7,24 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <gpioCallbackHandler.hpp>
 
 #include <map>
+#include <thread>
 #include <vector>
+
+constexpr uint16_t KEEP_GPIO_MASK = 0x7FFF;
+constexpr uint16_t NO_GPIO_MASK = 0;
+constexpr uint16_t MAX_GPIO_MASK = 255;
 
 namespace phosphor
 {
 namespace gpio
 {
+
+inline std::map<std::string, int16_t> gpioMaskMap;
+inline std::map<std::string, std::thread::id> gpioTimerThreadID;
 
 /** @class GpioMonitor
  *  @brief Responsible for catching GPIO state change
@@ -44,14 +53,18 @@ class GpioMonitor
      *  @param[in] continueRun - Whether to continue after event occur
      */
     GpioMonitor(gpiod_line* line, gpiod_line_request_config& config,
-                boost::asio::io_context& io, const std::string& target,
+                boost::asio::io_context& io,
+                std::map<std::string, std::vector<std::string>> target,
                 const std::map<std::string, std::vector<std::string>>& targets,
-                const std::string& lineMsg, bool continueRun, std::string hook,
+                const std::string& lineMsg, bool continueRun,
+                const std::string& pinName, std::string hook,
                 std::string gpioName) :
         gpioLine(line), gpioConfig(config), gpioEventDescriptor(io),
         target(target), targets(targets), gpioLineMsg(lineMsg),
-        continueAfterEvent(continueRun), hook(hook), gpioName(gpioName)
+        continueAfterEvent(continueRun), maskTimer(io), gpioPinName(pinName),
+        hook(hook), gpioName(gpioName)
     {
+        initializeEvent();
         requestGPIOEvents();
     };
 
@@ -66,7 +79,7 @@ class GpioMonitor
     boost::asio::posix::stream_descriptor gpioEventDescriptor;
 
     /** @brief Systemd unit to be started when the condition is met */
-    const std::string target;
+    std::map<std::string, std::vector<std::string>> target;
 
     /** @brief Multi systemd units to be started when the condition is met */
     std::map<std::string, std::vector<std::string>> targets;
@@ -76,6 +89,15 @@ class GpioMonitor
 
     /** @brief If the monitor should continue after event */
     bool continueAfterEvent;
+
+    /** @brief GPIO mask timer */
+    boost::asio::steady_timer maskTimer;
+
+    /** @brief GPIO pin description */
+    std::string gpioPinName;
+
+    /** @brief Handle the GPIO level during Initialization */
+    void initializeEvent();
 
     /** @brief callbacHook name*/
     std::string hook;

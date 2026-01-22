@@ -32,7 +32,14 @@ void GpioMonitor::scheduleEventHandler()
                            gpioLineMsg, "ERROR", ec.message());
                 return;
             }
-            gpioEventHandler();
+            if (gpioMaskMap[gpioPinName] == KEEP_GPIO_MASK)
+            {
+                scheduleEventHandler();
+            }
+            else
+            {
+                gpioEventHandler();
+            }
         });
 }
 
@@ -116,9 +123,24 @@ void GpioMonitor::gpioEventHandler()
     {
         return;
     }
-
-    /* Schedule a wait event */
-    scheduleEventHandler();
+    auto maskInterval = gpioMaskMap[gpioPinName];
+    if (maskInterval && (maskInterval > 0))
+    {
+        maskTimer.expires_from_now(boost::asio::chrono::seconds(maskInterval));
+        maskTimer.async_wait([&](const boost::system::error_code& ec) {
+            if (ec)
+            {
+                lg2::error("mask timer failed: {ERROR}", "ERROR", ec.message());
+                return;
+            }
+            scheduleEventHandler();
+        });
+    }
+    else
+    {
+        /* Schedule a wait event */
+        scheduleEventHandler();
+    }
 }
 
 void GpioMonitor::gpioHandleInitialState(bool value)
@@ -174,5 +196,46 @@ int GpioMonitor::requestGPIOEvents()
 
     return 0;
 }
+
+void GpioMonitor::initializeEvent()
+{
+    int val;
+    std::map<std::string, std::vector<std::string>> target;
+    std::vector<std::string> targetsToStart;
+    std::string logMessage = gpioLineMsg;
+
+    // target should be defined as:
+    // std::map<std::string, std::vector<std::string>> target;
+
+    if (!target["HIGH_INIT"].empty() || !target["LOW_INIT"].empty())
+    {
+        gpiod_line_request_input(gpioLine, "gpio_monitor");
+        val = gpiod_line_get_value(gpioLine);
+        gpiod_line_release(gpioLine);
+
+        if (!target["HIGH_INIT"].empty() && val == 1)
+        {
+            logMessage += " initialized to Level HIGH";
+            lg2::info(logMessage.c_str());
+            targetsToStart = target["HIGH_INIT"];
+        }
+        else if (!target["LOW_INIT"].empty() && val == 0)
+        {
+            logMessage += " initialized to Level LOW";
+            lg2::info(logMessage.c_str());
+            targetsToStart = target["LOW_INIT"];
+        }
+
+        auto bus = sdbusplus::bus::new_default();
+        for (auto& tar : targetsToStart)
+        {
+            auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_ROOT,
+                                              SYSTEMD_INTERFACE, "StartUnit");
+            method.append(tar, "replace");
+            bus.call_noreply(method);
+        }
+    }
+}
+
 } // namespace gpio
 } // namespace phosphor

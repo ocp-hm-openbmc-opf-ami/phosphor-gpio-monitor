@@ -54,4 +54,3 @@ static constexpr const char* ipmiIntf = "xyz.openbmc_project.Logging.IPMI";
 static constexpr const char* ipmiSelAddMethod = "IpmiSelAdd";
 static constexpr uint16_t selBMCGenID = 0x0020;
 static constexpr size_t selEvtDataMaxSize = 3;
-
