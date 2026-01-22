@@ -82,6 +82,12 @@ int main(int argc, char** argv)
         /* target to start */
         std::string target;
 
+        /* CallbackHook name */
+        std::string hook;
+
+        /* Name of gpio for reference */
+        std::string gpioName;
+
         /* multi targets to start */
         std::map<std::string, std::vector<std::string>> targets;
 
@@ -153,6 +159,17 @@ int main(int argc, char** argv)
             target = obj["Target"];
         }
 
+        /*Parse callbackHook name.*/
+        if (obj.find("CallbackFunction") != obj.end())
+        {
+            hook = obj["CallbackFunction"];
+        }
+        /*Get Name of gpio */
+        if (obj.find("Name") != obj.end())
+        {
+            gpioName = obj["Name"];
+        }
+
         /* Parse out the targets argument if multi-targets are needed.*/
         if (obj.find("Targets") != obj.end())
         {
@@ -161,7 +178,7 @@ int main(int argc, char** argv)
 
         /* Create a monitor object and let it do all the rest */
         gpios.push_back(std::make_unique<phosphor::gpio::GpioMonitor>(
-            line, config, io, target, targets, lineMsg, flag));
+            line, config, io, target, targets, lineMsg, flag, hook, gpioName));
     }
     io.run();
 

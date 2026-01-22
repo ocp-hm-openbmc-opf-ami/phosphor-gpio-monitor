@@ -7,6 +7,7 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
+#include <gpioCallbackHandler.hpp>
 
 #include <map>
 #include <vector>
@@ -45,10 +46,11 @@ class GpioMonitor
     GpioMonitor(gpiod_line* line, gpiod_line_request_config& config,
                 boost::asio::io_context& io, const std::string& target,
                 const std::map<std::string, std::vector<std::string>>& targets,
-                const std::string& lineMsg, bool continueRun) :
+                const std::string& lineMsg, bool continueRun, std::string hook,
+                std::string gpioName) :
         gpioLine(line), gpioConfig(config), gpioEventDescriptor(io),
         target(target), targets(targets), gpioLineMsg(lineMsg),
-        continueAfterEvent(continueRun)
+        continueAfterEvent(continueRun), hook(hook), gpioName(gpioName)
     {
         requestGPIOEvents();
     };
@@ -74,6 +76,12 @@ class GpioMonitor
 
     /** @brief If the monitor should continue after event */
     bool continueAfterEvent;
+
+    /** @brief callbacHook name*/
+    std::string hook;
+
+    /** @brief Name of gpio for reference */
+    std::string gpioName;
 
     /** @brief register handler for gpio event
      *

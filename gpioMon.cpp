@@ -76,6 +76,12 @@ void GpioMonitor::gpioEventHandler()
         {
             targetsToStart = risingFind->second;
         }
+        auto it = callbackHook.find(hook);
+        if (it != callbackHook.end())
+        {
+            // Call the hook function with desired parameters
+            it->second(gpioName, rising);
+        }
     }
     else
     {
@@ -83,6 +89,12 @@ void GpioMonitor::gpioEventHandler()
         if (fallingFind != targets.end())
         {
             targetsToStart = fallingFind->second;
+        }
+        auto it = callbackHook.find(hook);
+        if (it != callbackHook.end())
+        {
+            // Call the hook function with desired parameters
+            it->second(gpioName, falling);
         }
     }
 
