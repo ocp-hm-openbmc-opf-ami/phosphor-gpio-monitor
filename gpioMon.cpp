@@ -126,7 +126,7 @@ void GpioMonitor::gpioEventHandler()
     auto maskInterval = gpioMaskMap[gpioPinName];
     if (maskInterval && (maskInterval > 0))
     {
-        maskTimer.expires_from_now(boost::asio::chrono::seconds(maskInterval));
+        maskTimer.expires_after(boost::asio::chrono::seconds(maskInterval));
         maskTimer.async_wait([&](const boost::system::error_code& ec) {
             if (ec)
             {
