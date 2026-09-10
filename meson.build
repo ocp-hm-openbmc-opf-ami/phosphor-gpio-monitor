@@ -17,9 +17,15 @@ cxx = meson.get_compiler('cpp')
 libevdev = dependency('libevdev')
 libsystemd = dependency('libsystemd')
 libgpiod = dependency('libgpiod')
-phosphor_dbus_interfaces = dependency('phosphor-dbus-interfaces')
-phosphor_logging = dependency('phosphor-logging')
-sdbusplus = dependency('sdbusplus')
+if (get_option('tests').enabled())
+        sdbusplus = subproject('sdbusplus').get_variable('sdbusplus_dep')
+	phosphor_dbus_interfaces = dependency('phosphor-dbus-interfaces-ami')
+	phosphor_logging = subproject('phosphor-logging').get_variable('phosphor_logging_dep')
+else
+        sdbusplus = dependency('sdbusplus')
+	phosphor_dbus_interfaces = dependency('phosphor-dbus-interfaces')
+	phosphor_logging = dependency('phosphor-logging')
+endif
 systemd = dependency('systemd')
 
 nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
